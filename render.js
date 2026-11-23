@@ -2,6 +2,8 @@
 // Approach: photo as the base → user art clipped to the printable ring of the disc →
 // the photo's own light/shadow detail on the disc (rings, glare, tab edges) laid back on top.
 
+import { renderTape } from './tape.js';
+
 export const S = 1080; // output size
 
 // Measurements in the original photo (assets/case.jpg, 675×1200)
@@ -147,10 +149,17 @@ export function render(c, st, scale = 1, ui = false) {
   c.save();
   c.setTransform(scale, 0, 0, scale, 0, 0);
   c.imageSmoothingQuality = 'high';
-  c.drawImage(photo, 0, 0);
+  if (st.mode === 'tape') renderTape(c, st, scale);
+  else renderCD(c, st);
+  drawStickers(c, st, scale, ui);
+  c.restore();
+}
 
+function renderCD(c, st) {
+  c.drawImage(photo, 0, 0);
   if (st.art) {
-    const { img, zoom, ox, oy, rot = 0, flip = false } = st.art;
+    const { img } = st.art;
+    const { zoom, ox, oy, rot = 0, flip = false } = st.art.cd;
     const sc = coverScale(img) * zoom;
     c.save();
     ring(c, DISC.r - 1.5, DISC.hub);
@@ -164,7 +173,9 @@ export function render(c, st, scale = 1, ui = false) {
     c.drawImage(detail, 0, 0); // the case's own reflections back on top
     c.restore();
   }
+}
 
+function drawStickers(c, st, scale, ui) {
   for (const s of st.stickers) {
     if (!s.baked) continue;
     const { w, h } = stickerSize(s);
@@ -202,5 +213,4 @@ export function render(c, st, scale = 1, ui = false) {
     c.stroke();
     c.restore();
   }
-  c.restore();
 }

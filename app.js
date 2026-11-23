@@ -1,5 +1,6 @@
 import { Pane } from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.5/dist/tweakpane.min.js';
-import { S, DISC, loadTemplate, render, coverScale, stickerSize, handlePos, HANDLE_R } from './render.js';
+import { S, DISC, loadTemplate, render, stickerSize, handlePos, HANDLE_R } from './render.js';
+import { loadTape, inLabel, ORIGINAL_COLOR } from './tape.js';
 import { normalize, loadImageFile, removeBg, trim, bake } from './stickers.js';
 
 const $ = (id) => document.getElementById(id);
@@ -7,8 +8,11 @@ const cv = $('cv');
 const ctx = cv.getContext('2d');
 const DEG = Math.PI / 180;
 
-// The case photo is fixed. Only the cover image and the stickers can move.
-const state = { art: null, stickers: [], selected: null };
+// The case/cassette photo is fixed. Only the cover image and the stickers can move.
+// The cover image is shared by both modes; each mode keeps its own placement of it.
+const state = { mode: 'cd', tapeColor: ORIGINAL_COLOR, art: null, stickers: [], selected: null };
+const freshFit = () => ({ zoom: 1, ox: 0, oy: 0, rot: 0, flip: false });
+const fit = () => state.art[state.mode];
 
 let raf = 0;
 function draw() {
@@ -37,6 +41,31 @@ const quiet = (fn) => {
   try { fn(); } finally { syncing = false; }
 };
 
+// ---- format ----
+const fmt = { mode: state.mode, color: state.tapeColor };
+pane
+  .addBinding(fmt, 'mode', { label: 'format', options: { CD: 'cd', Mixtape: 'tape' } })
+  .on('change', (e) => {
+    state.mode = e.value;
+    colorBlade.hidden = resetColor.hidden = e.value !== 'tape';
+    fArt.title = e.value === 'tape' ? 'Label image' : 'Cover image';
+    syncArt();
+    draw();
+  });
+const colorBlade = pane.addBinding(fmt, 'color', { label: 'tape colour', view: 'color' });
+colorBlade.hidden = true;
+colorBlade.on('change', (e) => {
+  state.tapeColor = e.value;
+  draw();
+});
+const resetColor = pane.addButton({ title: 'Original tape colour' });
+resetColor.hidden = true;
+resetColor.on('click', () => {
+  fmt.color = state.tapeColor = ORIGINAL_COLOR;
+  quiet(() => colorBlade.refresh());
+  draw();
+});
+
 // ---- cover image ----
 const artP = { x: 0, y: 0, zoom: 1, rotate: 0, flip: false };
 const fArt = pane.addFolder({ title: 'Cover image' });
@@ -45,23 +74,23 @@ fArt.addBinding(artP, 'y', { min: -700, max: 700, step: 1 });
 fArt.addBinding(artP, 'zoom', { min: 0.2, max: 5, step: 0.01 });
 fArt.addBinding(artP, 'rotate', { label: 'rotate °', min: -180, max: 180, step: 1 });
 fArt.addBinding(artP, 'flip');
-fArt.addButton({ title: 'Fit to disc' }).on('click', () => {
+fArt.addButton({ title: 'Reset fit' }).on('click', () => {
   if (!state.art) return;
-  Object.assign(state.art, { zoom: 1, ox: 0, oy: 0, rot: 0 });
+  state.art[state.mode] = freshFit();
   syncArt();
   draw();
 });
 fArt.on('change', () => {
   if (syncing || !state.art) return;
-  Object.assign(state.art, { ox: artP.x, oy: artP.y, zoom: artP.zoom, rot: artP.rotate * DEG, flip: artP.flip });
+  Object.assign(fit(), { ox: artP.x, oy: artP.y, zoom: artP.zoom, rot: artP.rotate * DEG, flip: artP.flip });
   draw();
 });
 fArt.disabled = true;
 
 function syncArt() {
-  const a = state.art;
-  fArt.disabled = !a;
-  if (!a) return;
+  fArt.disabled = !state.art;
+  if (!state.art) return;
+  const a = fit();
   Object.assign(artP, { x: Math.round(a.ox), y: Math.round(a.oy), zoom: a.zoom, rotate: Math.round(a.rot / DEG), flip: !!a.flip });
   quiet(() => fArt.refresh());
 }
@@ -142,7 +171,7 @@ function syncSticker() {
 async function setArt(file) {
   try {
     const img = normalize(await loadImageFile(file), 2400);
-    state.art = { img, zoom: 1, ox: 0, oy: 0, rot: 0, flip: false };
+    state.art = { img, cd: freshFit(), tape: freshFit() };
     syncArt();
     draw();
   } catch (e) {
@@ -248,7 +277,8 @@ function hitSticker(p) {
   }
   return null;
 }
-const inDisc = (p) => Math.hypot(p.x - DISC.x, p.y - DISC.y) <= DISC.r;
+// is the point on the printable area (disc or tape label) for the current mode?
+const onArt = (p) => (state.mode === "tape" ? inLabel(p) : Math.hypot(p.x - DISC.x, p.y - DISC.y) <= DISC.r);
 
 let drag = null;
 cv.addEventListener('pointerdown', (e) => {
@@ -266,7 +296,7 @@ cv.addEventListener('pointerdown', (e) => {
       drag = { kind: 'sticker', s, dx: p.x - s.x, dy: p.y - s.y };
     } else {
       if (sel) select(null);
-      if (state.art && inDisc(p)) drag = { kind: 'art', px: p.x, py: p.y, ox: state.art.ox, oy: state.art.oy };
+      if (state.art && onArt(p)) drag = { kind: 'art', px: p.x, py: p.y, ox: fit().ox, oy: fit().oy };
     }
   }
   if (drag) {
@@ -289,8 +319,8 @@ cv.addEventListener('pointermove', (e) => {
     s.rot = rot;
     syncSticker();
   } else {
-    state.art.ox = drag.ox + (p.x - drag.px);
-    state.art.oy = drag.oy + (p.y - drag.py);
+    fit().ox = drag.ox + (p.x - drag.px);
+    fit().oy = drag.oy + (p.y - drag.py);
     syncArt();
   }
   draw();
@@ -311,8 +341,8 @@ cv.addEventListener(
     if (s) {
       s.scale = Math.max(30, Math.min(1400, s.scale * f));
       if (s === state.selected) syncSticker();
-    } else if (state.art && inDisc(p)) {
-      state.art.zoom = Math.max(0.2, Math.min(5, state.art.zoom * f));
+    } else if (state.art && onArt(p)) {
+      fit().zoom = Math.max(0.2, Math.min(5, fit().zoom * f));
       syncArt();
     } else return;
     e.preventDefault();
@@ -339,8 +369,8 @@ window.addEventListener('keydown', (e) => {
     s.y += dy;
     syncSticker();
   } else if (state.art) {
-    state.art.ox += dx;
-    state.art.oy += dy;
+    fit().ox += dx;
+    fit().oy += dy;
     syncArt();
   } else return;
   e.preventDefault();
@@ -361,7 +391,7 @@ stage.addEventListener('drop', async (e) => {
   const files = [...e.dataTransfer.files].filter((f) => f.type.startsWith('image/'));
   if (!files.length) return;
   const p = toCanvas(e);
-  if (!state.art || inDisc(p)) {
+  if (!state.art || onArt(p)) {
     await setArt(files.shift());
     for (const f of files) await addSticker(f);
   } else for (const f of files) await addSticker(f, [p.x, p.y]);
@@ -388,6 +418,6 @@ $('download').addEventListener('click', () => {
   }, 'image/jpeg', 0.93);
 });
 
-await loadTemplate();
+await Promise.all([loadTemplate(), loadTape()]);
 draw();
 window.jewelcase = { state, draw };
