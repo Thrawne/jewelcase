@@ -9,9 +9,10 @@ export const S = 1080; // output size
 // Measurements in the original photo (assets/case.jpg, 675×1200)
 const TEMPLATE = {
   src: 'assets/case.jpg',
-  crop: { x: 80, y: 352, size: 522 }, // case fills the frame, like the TikTok covers
-  // fitted against the disc's outer rim (top/right/bottom) and the clear centre ring at 4× zoom
-  disc: { cx: 345.5, cy: 612, r: 205, hub: 95 }, // hub = clear unprinted centre
+  crop: { x: 103, y: 377, size: 476 }, // case fills ~98% of the frame, matching the reference covers // case fills the frame, like the TikTok covers
+  // centre = centroid of the black hub; r = outer rim (checked at 4× zoom).
+  // Art prints right up to the black hub, like the blank template (printable area 0.32–1.0 × r).
+  disc: { cx: 338.5, cy: 611.5, r: 207, hub: 66 }, // hub = black centre the art stops at
   base: 190, // average grey of the blank disc
 };
 
