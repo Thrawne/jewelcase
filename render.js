@@ -175,6 +175,40 @@ function renderCD(c, st) {
   }
 }
 
+// While a sticker's background is being removed: the sticker breathes (dims in and out)
+// and a bright band wipes across it, following its shape. Preview only, never exported.
+const shimmerCanvas = canvas(1);
+function busyShimmer(c, s, w, h) {
+  const t = (performance.now() - (s.busyStart || 0)) / 1000;
+  const W = Math.ceil(w), H = Math.ceil(h);
+  if (shimmerCanvas.width < W || shimmerCanvas.height < H) {
+    shimmerCanvas.width = Math.max(W, shimmerCanvas.width);
+    shimmerCanvas.height = Math.max(H, shimmerCanvas.height);
+  }
+  const o = shimmerCanvas.getContext('2d');
+  o.globalCompositeOperation = 'source-over';
+  o.clearRect(0, 0, shimmerCanvas.width, shimmerCanvas.height);
+  o.drawImage(s.baked, 0, 0, w, h);
+  o.globalCompositeOperation = 'source-in'; // paint only inside the sticker's shape
+
+  const pulse = 0.22 + 0.16 * (0.5 + 0.5 * Math.sin(t * 4.2));
+  const p = (t * 0.75) % 1; // band position, sweeps every ~1.3s
+  const band = -0.25 + p * 1.5;
+  const g = o.createLinearGradient(0, 0, w, h * 0.35);
+  const dark = `rgba(0,0,0,${pulse})`;
+  const stop = (at, col) => at > 0 && at < 1 && g.addColorStop(at, col);
+  g.addColorStop(0, dark);
+  stop(band - 0.16, dark);
+  stop(band, 'rgba(255,255,255,0.55)');
+  stop(band + 0.16, dark);
+  g.addColorStop(1, dark);
+  o.fillStyle = g;
+  o.fillRect(0, 0, w, h);
+  c.shadowColor = 'transparent';
+  c.globalAlpha = 1;
+  c.drawImage(shimmerCanvas, 0, 0, W, H, -w / 2, -h / 2, W, H);
+}
+
 function drawStickers(c, st, scale, ui) {
   for (const s of st.stickers) {
     if (!s.baked) continue;
@@ -188,6 +222,7 @@ function drawStickers(c, st, scale, ui) {
     c.shadowBlur = 16 * scale;
     c.shadowOffsetY = 5 * scale;
     c.drawImage(s.baked, -w / 2, -h / 2, w, h);
+    if (ui && s.busy) busyShimmer(c, s, w, h);
     c.restore();
   }
 

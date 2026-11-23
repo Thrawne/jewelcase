@@ -25,6 +25,10 @@
           <input type="file" id="stickerFile" accept="image/*" multiple hidden />
           Add sticker
         </label>
+        <label class="filename" title="File name for the download">
+          <input type="text" id="fileName" value="playlist-cover" spellcheck="false" aria-label="File name" />
+          <span>.jpg</span>
+        </label>
         <button class="btn primary" id="download">Download</button>
       </div>
       <p class="hint">Drag the cover image or stickers · scroll to zoom · white handle resizes/rotates · arrow keys nudge (shift = 10px) · ⌫ deletes</p>
@@ -32,6 +36,10 @@
     </section>
     <aside class="panel">
       <div id="pane"></div>
+      <div class="progress" id="progress" hidden>
+        <div class="progress-bar" id="progressBar"></div>
+        <span id="progressText"></span>
+      </div>
       <p class="status" id="status" aria-live="polite"></p>
     </aside>
   </main>

@@ -20,6 +20,8 @@ function draw() {
   raf = requestAnimationFrame(() => {
     raf = 0;
     render(ctx, state, cv.width / S, true);
+    // keep animating the shimmer while any sticker is being cut out
+    if (state.stickers.some((s) => s.busy)) draw();
   });
 }
 new ResizeObserver(() => {
@@ -31,6 +33,16 @@ new ResizeObserver(() => {
 }).observe(cv);
 
 const say = (msg) => ($('status').textContent = msg);
+
+/** Progress bar under the panel. pct = number → fills to that %, null → indeterminate wipe, false → hide. */
+function progress(msg, pct) {
+  const box = $('progress');
+  box.hidden = pct === false;
+  if (pct === false) return;
+  box.classList.toggle('indeterminate', pct == null);
+  if (pct != null) $('progressBar').style.width = `${pct}%`;
+  $('progressText').textContent = msg;
+}
 
 /* =================== panel (Tweakpane) =================== */
 
@@ -168,9 +180,16 @@ function syncSticker() {
 
 /* =================== cover image =================== */
 
+// download name follows the cover image's file name until you type your own
+let nameEdited = false;
+$('fileName').addEventListener('input', () => (nameEdited = true));
+const cleanName = (n) =>
+  n.replace(/\.(jpe?g|png|webp|gif|heic|avif)$/i, '').replace(/[\\/:*?"<>|]+/g, '-').trim().slice(0, 80) || 'playlist-cover';
+
 async function setArt(file) {
   try {
     const img = normalize(await loadImageFile(file), 2400);
+    if (!nameEdited && file.name) $('fileName').value = cleanName(file.name);
     state.art = { img, cd: freshFit(), tape: freshFit() };
     syncArt();
     draw();
@@ -212,12 +231,16 @@ function select(s) {
 }
 
 async function setRemoveBg(s, on) {
+  if (s.busy) return syncSticker(); // already cutting this one out
   s.removeBg = on;
   if (on && !s.noBg) {
     s.busy = true;
+    s.busyStart = performance.now();
+    say('');
+    progress('Starting…', null);
+    draw(); // starts the shimmer on the sticker
     try {
-      s.noBg = trim(await removeBg(s.src, (m) => state.selected === s && say(m)));
-      say('');
+      s.noBg = trim(await removeBg(s.src, (m, pct) => progress(m, pct)));
     } catch (err) {
       console.error(err);
       s.removeBg = false;
@@ -226,6 +249,8 @@ async function setRemoveBg(s, on) {
       return;
     } finally {
       s.busy = false;
+      if (!state.stickers.some((x) => x.busy)) progress('', false);
+      draw();
     }
   }
   s.cut = s.removeBg ? s.noBg : trim(s.src);
@@ -412,7 +437,7 @@ $('download').addEventListener('click', () => {
   out.toBlob((blob) => {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'playlist-cover.jpg';
+    a.download = `${cleanName($('fileName').value)}.jpg`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   }, 'image/jpeg', 0.93);

@@ -31,8 +31,9 @@ export function loadImageFile(file) {
 let aiLib = null;
 /** In-browser background removal. The model downloads once, then the browser caches it. */
 export async function removeBg(src, onProgress) {
+  // onProgress(message, percent|null) — percent is null while there's nothing to measure
   if (!aiLib) {
-    onProgress?.('Loading background remover…');
+    onProgress?.('Loading background remover…', null);
     aiLib = await import(AI_LIB);
   }
   const blob = await new Promise((r) => src.toBlob(r, 'image/png'));
@@ -40,9 +41,13 @@ export async function removeBg(src, onProgress) {
     model: 'isnet_quint8', // smallest model — quickest first download
     output: { format: 'image/png' },
     progress: (key, cur, total) => {
-      onProgress?.(key.startsWith('fetch') ? `Downloading cutout model ${Math.round((cur / total) * 100)}% (first time only)` : 'Removing background…');
+      if (key.startsWith('fetch')) {
+        const pct = Math.round((cur / total) * 100);
+        onProgress?.(`Downloading cutout model · ${pct}% (first time only)`, pct);
+      } else onProgress?.('Removing background…', null);
     },
   });
+  onProgress?.('Cleaning up edges…', null);
   const bmp = await createImageBitmap(res);
   const c = makeCanvas(bmp.width, bmp.height);
   const x = c.getContext('2d', { willReadFrequently: true });
