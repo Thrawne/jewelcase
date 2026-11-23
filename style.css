@@ -49,6 +49,8 @@ body {
 .btn:hover { background: #242424; }
 .btn.primary { background: #fff; color: #000; border-color: #fff; font-weight: 700; }
 .hint { color: #666; font-size: 12px; text-align: center; margin: 0; }
+.source a { color: #999; }
+.source a:hover { color: #fff; }
 .panel { position: sticky; top: 24px; }
 .status { color: #9f9; font-size: 12px; margin: 10px 4px 0; }
 .status:empty { display: none; }

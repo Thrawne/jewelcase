@@ -29,6 +29,10 @@ Then open http://127.0.0.1:4400.
 - `app.js`: canvas interaction and the [Tweakpane](https://tweakpane.github.io/docs/) panel
 - `assets/case.jpg`: the clear-case template photo
 
+## Licence
+
+[AGPL-3.0](LICENSE). You can use, change and host it, even commercially, as long as anyone using your version over a network can get its source code under the same licence. The live app links back to this repo for that reason.
+
 ## Credits
 
 - Case template photo via Pinterest, credited there to audreykaker.
