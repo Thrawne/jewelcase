@@ -1,0 +1,59 @@
+:root {
+  color-scheme: dark;
+  /* Tweakpane theme to match the app */
+  --tp-base-background-color: #141414;
+  --tp-base-shadow-color: rgba(0, 0, 0, 0.4);
+  --tp-button-background-color: #e8e8e8;
+  --tp-button-background-color-hover: #ffffff;
+  --tp-button-foreground-color: #0a0a0a;
+  --tp-container-background-color: rgba(255, 255, 255, 0.06);
+  --tp-container-background-color-hover: rgba(255, 255, 255, 0.1);
+  --tp-container-foreground-color: #ddd;
+  --tp-input-background-color: rgba(255, 255, 255, 0.07);
+  --tp-input-background-color-hover: rgba(255, 255, 255, 0.11);
+  --tp-input-foreground-color: #eee;
+  --tp-label-foreground-color: #9a9a9a;
+  --tp-groove-foreground-color: rgba(255, 255, 255, 0.1);
+  --tp-base-font-family: 'Space Grotesk', system-ui, sans-serif;
+  --tp-blade-value-width: 170px;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  margin: 0; min-height: 100vh; background: #0a0a0a; color: #eee;
+  font: 14px/1.4 'Space Grotesk', system-ui, sans-serif;
+}
+.app {
+  display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px;
+  max-width: 1100px; margin: 0 auto; padding: 24px; align-items: start;
+}
+.stage { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.canvas-wrap {
+  position: relative; aspect-ratio: 1; width: 100%; max-width: min(720px, calc(100vh - 140px)); margin: 0 auto;
+  border-radius: 4px; overflow: hidden; box-shadow: 0 0 0 1px #222;
+}
+#cv { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+#cv.dragging { cursor: grabbing; }
+.dropmask {
+  position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 24px;
+  font-weight: 700; background: rgba(255,255,255,.08); border: 2px dashed #fff;
+  opacity: 0; pointer-events: none; transition: opacity .15s;
+}
+.canvas-wrap.over .dropmask { opacity: 1; }
+.bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; width: 100%; max-width: min(720px, calc(100vh - 140px)); margin: 0 auto; }
+.bar .primary { margin-left: auto; }
+.btn {
+  background: #1a1a1a; border: 1px solid #333; border-radius: 999px; padding: 9px 16px;
+  color: inherit; font: inherit; cursor: pointer; white-space: nowrap;
+}
+.btn:hover { background: #242424; }
+.btn.primary { background: #fff; color: #000; border-color: #fff; font-weight: 700; }
+.hint { color: #666; font-size: 12px; text-align: center; margin: 0; }
+.panel { position: sticky; top: 24px; }
+.status { color: #9f9; font-size: 12px; margin: 10px 4px 0; }
+.status:empty { display: none; }
+
+@media (max-width: 860px) {
+  .app { grid-template-columns: 1fr; padding: 16px; }
+  .panel { position: static; }
+}

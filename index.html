@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Jewelcase</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="app">
+    <section class="stage">
+      <div class="canvas-wrap" id="stage">
+        <canvas id="cv" width="1080" height="1080" aria-label="Cover preview"></canvas>
+        <div class="dropmask">Drop on the disc for the cover image · anywhere else for a sticker</div>
+      </div>
+      <div class="bar">
+        <label class="btn">
+          <input type="file" id="artFile" accept="image/*" hidden />
+          Cover image
+        </label>
+        <label class="btn">
+          <input type="file" id="stickerFile" accept="image/*" multiple hidden />
+          Add sticker
+        </label>
+        <button class="btn primary" id="download">Download</button>
+      </div>
+      <p class="hint">Drag the cover image or stickers · scroll to zoom · white handle resizes/rotates · arrow keys nudge (shift = 10px) · ⌫ deletes</p>
+    </section>
+    <aside class="panel">
+      <div id="pane"></div>
+      <p class="status" id="status" aria-live="polite"></p>
+    </aside>
+  </main>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
